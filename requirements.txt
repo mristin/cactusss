@@ -1,0 +1,4 @@
+opencv-python==4.7.0.68
+mediapipe==0.9.0.1
+icontract>=2.6.1,<3
+pygame==2.1.2
