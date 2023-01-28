@@ -4,7 +4,7 @@ Cactusss
 
 Steer the balloon with your head through a thorny cactus desert.
 
-.. image:: https://media.githubusercontent.com/media/mristin/cactusss-desktop/main/screenshot.gif
+.. image:: https://github.com/mristin/cactusss-desktop/blob/main/screenshot.gif?raw=true
     :alt: Screenshot
 
 Installation
