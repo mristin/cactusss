@@ -4,18 +4,14 @@ Cactusss
 
 Steer the balloon with your head through a thorny cactus desert.
 
-.. image:: https://media.githubusercontent.com/media/mristin/cactusss/main/screenshot.gif
+.. image:: https://media.githubusercontent.com/media/mristin/cactusss-desktop/main/screenshot.gif
     :alt: Screenshot
-
-.. image:: https://github.com/mristin/cactusss/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/mristin/cactusss/actions/workflows/ci.yml
-    :alt: Continuous integration
 
 Installation
 ============
 Download and unzip a version of the game from the `Releases`_.
 
-.. _Releases: https://github.com/mristin/cactusss/releases
+.. _Releases: https://github.com/mristin/cactusss-desktop/releases
 
 Running
 =======
