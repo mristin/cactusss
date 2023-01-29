@@ -79,6 +79,8 @@ SCENE_HEIGHT = 320
 
 TILE_WIDTH = 32
 TILE_HEIGHT = 32
+ROAD_WIDTH_IN_TILES = 14
+ROAD_LEFT_MARGIN = (SCENE_WIDTH - ROAD_WIDTH_IN_TILES * TILE_WIDTH) / 2
 
 #: Forward velocity of the balloon relative to the ground, in world coordinates
 BALLOON_FORWARD_VELOCITY = 50
@@ -279,10 +281,10 @@ class Level:
     @require(
         lambda ground, tiles: len(ground) == len(tiles)
         and all(
-            len(ground_row) == len(tiles_row) == SCENE_WIDTH // TILE_WIDTH
+            len(ground_row) == len(tiles_row) == ROAD_WIDTH_IN_TILES
             for ground_row, tiles_row in zip(ground, tiles)
         ),
-        "Ground and tiles have same dimensions and cover the scene width",
+        "Ground and tiles have same dimensions and cover the road width",
     )
     def __init__(
         self,
@@ -312,10 +314,10 @@ class LevelPattern(Sequence[str]):
     @require(
         lambda data:
         all(
-            len(row) == SCENE_WIDTH // TILE_WIDTH
+            len(row) == ROAD_WIDTH_IN_TILES
             for row in data
         ),
-        "Whole width of the scene covered"
+        "Whole width of the road covered"
     )
     # fmt: on
     def __new__(cls, data: Sequence[str]) -> "LevelPattern":
@@ -335,60 +337,60 @@ class LevelPattern(Sequence[str]):
 PATTERNS = [
     LevelPattern(
         [
-            "#######       ######",
-            "#######       ######",
-            "#######       ######",
+            "####       ###",
+            "####       ###",
+            "####       ###",
         ]
     ),
     LevelPattern(
         [
-            "#######       ######",
-            "########     #######",
-            "#########   ########",
-            "########     #######",
-            "#######       ######",
+            "####       ###",
+            "####       ###",
+            "######     ###",
+            "####       ###",
+            "####       ###",
         ]
     ),
     LevelPattern(
         [
-            "#######       ######",
-            "######   #   #######",
-            "#####   #   ########",
-            "####   #   #########",
-            "####   #    ########",
-            "####    #   ########",
-            "######       #######",
+            "###        ###",
+            "##    #   ####",
+            "#    #    ####",
+            "#   #    #####",
+            "#   #    #####",
+            "#    #   #####",
+            "##        ####",
         ]
     ),
     LevelPattern(
         [
-            "#######       ######",
-            "########   #   #####",
-            "#########  #    ####",
-            "#########  #    ####",
-            "########    #   ####",
-            "########   #    ####",
-            "######        ######",
+            "####        ##",
+            "####    #   ##",
+            "####    #    #",
+            "####    #    #",
+            "####     #   #",
+            "####    #    #",
+            "###         ##",
         ]
     ),
     LevelPattern(
         [
-            "#######       ######",
-            "######    #     ####",
-            "######    #    #####",
-            "#####    ##    #####",
-            "######    #     ####",
-            "#######        #####",
+            "###        ###",
+            "##     #     #",
+            "##     #    ##",
+            "#     ##    ##",
+            "##     #     #",
+            "###         ##",
         ]
     ),
     LevelPattern(
         [
-            "#####         ######",
-            "####     #     #####",
-            "####    ##     #####",
-            "####     ##    #####",
-            "####     #     #####",
-            "#####         ######",
+            "##         ###",
+            "#     #      #",
+            "#    ##      #",
+            "#     ##     #",
+            "#     #      #",
+            "##          ##",
         ]
     ),
 ]
@@ -423,10 +425,7 @@ def generate_level(
 
     for row in level_as_pattern:
         ground.append(
-            [
-                random.choice(media.ground_tiles)
-                for _ in range(SCENE_WIDTH // TILE_WIDTH)
-            ]
+            [random.choice(media.ground_tiles) for _ in range(ROAD_WIDTH_IN_TILES)]
         )
 
         tile_row = []  # type: List[Tile]
@@ -443,7 +442,7 @@ def generate_level(
 
         tiles.append(tile_row)
 
-    next_mod = 10 + random.randint(1, 5)
+    next_mod = 5 + random.randint(1, 5)
     while next_mod < len(tiles):
         tile_row = tiles[next_mod]
         potential_passables = [
@@ -453,7 +452,7 @@ def generate_level(
         tile_with_mod = random.choice(potential_passables)
         tile_with_mod.mod_factory = random.choice(MOD_FACTORIES)
 
-        next_mod = next_mod + 5 + random.randint(1, 5)
+        next_mod = next_mod + random.randint(1, 3)
 
     return Level(ground=ground, tiles=tiles)
 
@@ -589,6 +588,18 @@ class Command(enum.Enum):
     GO_RIGHT = 1
 
 
+class GameOver:
+    #: Timestamp when the game ended
+    end: Final[float]
+
+    kind: Final[cactusss.events.GameOverKind]
+
+    def __init__(self, end: float, kind: cactusss.events.GameOverKind) -> None:
+        """Initialize with the given values."""
+        self.end = end
+        self.kind = kind
+
+
 class State:
     """Capture the global state of the game."""
 
@@ -602,7 +613,7 @@ class State:
     now: float
 
     #: Set when the game finishes
-    game_over: Optional[cactusss.events.GameOverKind]
+    game_over: Optional[GameOver]
 
     level: Level
 
@@ -624,7 +635,7 @@ def initialize_state(state: State, game_start: float, level: Level) -> None:
 
     state.level = level
     state.balloon = Balloon(
-        xy=(SCENE_WIDTH / 2, NORMAL_BALLOON_HEIGHT),
+        xy=(ROAD_WIDTH_IN_TILES * TILE_WIDTH / 2, NORMAL_BALLOON_HEIGHT),
         velocity=(0, BALLOON_FORWARD_VELOCITY),
     )
     state.active_commands = set()
@@ -696,7 +707,7 @@ def handle_in_game(
                 0.0,
                 min(
                     state.balloon.xy[0] + time_delta * state.balloon.velocity[0],
-                    SCENE_WIDTH - state.balloon.width(),
+                    ROAD_WIDTH_IN_TILES * TILE_WIDTH - state.balloon.width(),
                 ),
             ),
             state.balloon.xy[1] + time_delta * state.balloon.velocity[1],
@@ -777,10 +788,11 @@ def handle(
         our_event_queue.pop(0)
 
         if state.game_over is None:
-            state.game_over = event.kind
-            if state.game_over is cactusss.events.GameOverKind.HAPPY_END:
+            state.game_over = GameOver(end=state.now, kind=event.kind)
+
+            if state.game_over.kind is cactusss.events.GameOverKind.HAPPY_END:
                 media.happy_end_sound.play()
-            elif state.game_over is cactusss.events.GameOverKind.PLOP:
+            elif state.game_over.kind is cactusss.events.GameOverKind.PLOP:
                 media.plop_sound.play()
             else:
                 assert_never(state.game_over)
@@ -795,9 +807,20 @@ def render_game_over(state: State, media: Media) -> pygame.surface.Surface:
 
     assert state.game_over is not None
 
-    if state.game_over is cactusss.events.GameOverKind.HAPPY_END:
+    if state.game_over.kind is cactusss.events.GameOverKind.HAPPY_END:
+        road_length = len(state.level.tiles) * TILE_HEIGHT
+        time_delta = state.game_over.end - state.game_start
+        average_velocity = road_length / time_delta
         media.font.render_to(scene, (20, 20), "You made it!", (255, 255, 255), size=16)
-    elif state.game_over is cactusss.events.GameOverKind.PLOP:
+
+        media.font.render_to(
+            scene,
+            (20, 60),
+            f"Average velocity: {average_velocity:.1f} pixels / second",
+            (255, 255, 255),
+            size=16,
+        )
+    elif state.game_over.kind is cactusss.events.GameOverKind.PLOP:
         media.font.render_to(scene, (20, 20), "Game Over :'(", (255, 255, 255), size=16)
 
         sprite_i = int((state.now / 0.5)) % (len(media.plopping_sprites) + 1)
@@ -805,7 +828,7 @@ def render_game_over(state: State, media: Media) -> pygame.surface.Surface:
             sprite = media.plopping_sprites[sprite_i]
             scene.blit(sprite, (SCENE_WIDTH / 2 - sprite.get_width() / 2, 40))
     else:
-        assert_never(state.game_over)
+        assert_never(state.game_over.kind)
 
     media.font.render_to(
         scene,
@@ -842,7 +865,7 @@ def world_xy_to_screen_xy(
 
     Screen covers the whole scene.
     """
-    return (xy[0], SCENE_HEIGHT - (xy[1] - camera_start))
+    return (ROAD_LEFT_MARGIN + xy[0], SCENE_HEIGHT - (xy[1] - camera_start))
 
 
 def tile_row_column_to_screen_xy(
@@ -859,7 +882,7 @@ def tile_row_column_to_screen_xy(
     Screen covers the whole scene.
     """
     return (
-        column * TILE_WIDTH,
+        ROAD_LEFT_MARGIN + column * TILE_WIDTH,
         SCENE_HEIGHT - (row * TILE_HEIGHT + TILE_HEIGHT - camera_start),
     )
 
@@ -938,7 +961,11 @@ def render_game(
     scene.blit(scaled_balloon_sprite, screen_xy)
 
     media.font.render_to(
-        scene, (10, 10), 'Press "q" to quit and "r" to restart', (0, 0, 0), size=12
+        scene,
+        (ROAD_LEFT_MARGIN + 10, 10),
+        'Press "q" to quit and "r" to restart',
+        (0, 0, 0),
+        size=12,
     )
 
     if recognizer.head_image is not None:
