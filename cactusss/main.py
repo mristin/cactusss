@@ -889,8 +889,11 @@ def tile_row_column_to_screen_xy(
 
 def cvmat_to_surface(image: cv2.Mat) -> pygame.surface.Surface:
     """Convert from OpenCV to pygame."""
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     height, width, _ = image.shape
+    if height == 0 and width == 0:
+        return pygame.surface.Surface((1, 1))
+
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return pygame.image.frombuffer(image_rgb.tobytes(), (width, height), "RGB")
 
 
