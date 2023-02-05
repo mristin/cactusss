@@ -22,7 +22,7 @@ with open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fid:
 setup(
     name="cactusss",
     # Don't forget to update the version in __init__.py and CHANGELOG.rst!
-    version="0.0.2",
+    version="0.0.3",
     description="Steer the balloon with your head through a thorny cactus desert.",
     long_description=long_description,
     url="https://github.com/mristin/cactusss-desktop",
